@@ -2,6 +2,8 @@ package middleware
 
 import (
 	"backend/api/model"
+	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -9,12 +11,39 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/joho/godotenv"
 )
 
-var jwtSecret = []byte(os.Getenv("JWT_SECRET"))
+var jwtSecret []byte
 
-// GenerateToken создает JWT токен для пользователя
+func init() {
+	// Загружаем .env перед инициализацией переменных
+	if err := loadEnv(); err != nil {
+		log.Println("⚠️  .env file not found, using system environment variables")
+	}
+	jwtSecret = []byte(os.Getenv("JWT_SECRET"))
+	if len(jwtSecret) == 0 {
+		log.Println("⚠️  JWT_SECRET is not set in .env file")
+	}
+}
+
+// loadEnv загружает переменные окружения из .env файла
+func loadEnv() error {
+	// Пытаемся загрузить из разных путей
+	paths := []string{".env", "../.env", "../../.env", "../../../.env"}
+	for _, path := range paths {
+		if err := godotenv.Load(path); err == nil {
+			return nil
+		}
+	}
+	return godotenv.Load() // стандартный путь
+}
+
 func GenerateToken(user model.User) (string, error) {
+	if len(jwtSecret) == 0 {
+		return "", fmt.Errorf("JWT_SECRET is not configured")
+	}
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id":  user.ID,
 		"username": user.Username,
