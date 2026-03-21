@@ -45,7 +45,7 @@ const visitedPlaceIcon = L.icon({
   popupAnchor: [1, -34],
 });
 
-interface MapViewProps {
+export interface MapViewProps {
   userLocation: { lat: number; lng: number } | null;
   places: PlaceWithDistance[];
   radiusKm: number;
@@ -66,10 +66,10 @@ function MapController({ center }: { center: [number, number] | null }) {
 
   useEffect(() => {
     if (
-      center &&
-      (!prevCenter.current ||
-        prevCenter.current[0] !== center[0] ||
-        prevCenter.current[1] !== center[1])
+        center &&
+        (!prevCenter.current ||
+            prevCenter.current[0] !== center[0] ||
+            prevCenter.current[1] !== center[1])
     ) {
       map.setView(center, map.getZoom());
       prevCenter.current = center;
@@ -94,10 +94,10 @@ function FlyToPlace({ place }: { place: PlaceWithDistance | null | undefined }) 
 }
 
 function FitRadius({
-  center,
-  radiusKm,
-  hasPlaces,
-}: {
+                     center,
+                     radiusKm,
+                     hasPlaces,
+                   }: {
   center: [number, number] | null;
   radiusKm: number;
   hasPlaces: boolean;
@@ -108,9 +108,9 @@ function FitRadius({
 
   useEffect(() => {
     if (
-      center &&
-      hasPlaces &&
-      (!prevHasPlaces.current || prevRadius.current !== radiusKm)
+        center &&
+        hasPlaces &&
+        (!prevHasPlaces.current || prevRadius.current !== radiusKm)
     ) {
       const bounds = L.latLng(center[0], center[1]).toBounds(radiusKm * 1000 * 2);
       map.fitBounds(bounds, { padding: [50, 50] });
@@ -124,9 +124,9 @@ function FitRadius({
 }
 
 function RoutingControl({
-  from,
-  to,
-}: {
+                          from,
+                          to,
+                        }: {
   from: L.LatLng;
   to: L.LatLng;
 }) {
@@ -137,7 +137,7 @@ function RoutingControl({
     if (!map) return;
 
     if (routingRef.current) {
-      try { map.removeControl(routingRef.current); } catch {}
+      try { map.removeControl(routingRef.current); } catch { /* ignore */ }
       routingRef.current = null;
     }
 
@@ -147,8 +147,11 @@ function RoutingControl({
       const control = LRMDefault.control({
         waypoints: [from, to],
         router: LRMDefault.osrmv1({
+          // Демо-сервер OSRM поддерживает ТОЛЬКО профиль 'driving'.
+          // 'foot' и 'cycling' — платные / недоступны на public demo.
+          // Если нужен пеший маршрут — разверните свой OSRM или используйте GraphHopper API.
           serviceUrl: 'https://router.project-osrm.org/route/v1',
-          profile: 'foot',
+          profile: 'driving',
           suppressDemoServerWarning: true,
         }),
         lineOptions: {
@@ -175,7 +178,7 @@ function RoutingControl({
 
     return () => {
       if (routingRef.current) {
-        try { map.removeControl(routingRef.current); } catch {}
+        try { map.removeControl(routingRef.current); } catch { /* ignore */ }
         routingRef.current = null;
       }
     };
@@ -184,7 +187,9 @@ function RoutingControl({
   return null;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
 // Кастомный попап над маркером
+// ─────────────────────────────────────────────────────────────────────────────
 interface PlacePopupProps {
   place: PlaceWithDistance;
   mapRef: React.RefObject<L.Map | null>;
@@ -198,10 +203,14 @@ interface PlacePopupProps {
 }
 
 function PlacePopupOverlay({
-  place, mapRef, onClose, onRouteRequest, userLocation,
-  isLoggedIn, isVisited, onMarkVisited, onShowAuth,
-}: PlacePopupProps) {
+                             place, mapRef, onClose, onRouteRequest, userLocation,
+                             isLoggedIn, isVisited, onMarkVisited, onShowAuth,
+                           }: PlacePopupProps) {
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+
+  // Ref на DOM-элемент popup — используем его чтобы запретить Leaflet
+  // обрабатывать клики внутри попапа (disableClickPropagation).
+  const popupDomRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const updatePos = () => {
@@ -217,129 +226,151 @@ function PlacePopupOverlay({
     return () => { map.off('move zoom moveend zoomend', updatePos); };
   }, [place, mapRef]);
 
+  // Вешаем L.DomEvent.disableClickPropagation на DOM-узел попапа.
+  // Это останавливает всплытие события click/mousedown/dblclick до Leaflet,
+  // поэтому карта не реагирует на нажатия внутри попапа.
+  useEffect(() => {
+    const el = popupDomRef.current;
+    if (!el) return;
+    L.DomEvent.disableClickPropagation(el);
+    L.DomEvent.disableScrollPropagation(el);
+  }, [pos]); // перевешиваем после первого рендера с позицией
+
   if (!pos) return null;
 
   return (
-    <div
-      style={{
-        position: 'absolute',
-        left: pos.x,
-        top: pos.y,
-        transform: 'translate(-50%, calc(-100% - 52px))',
-        zIndex: 1000,
-        pointerEvents: 'auto',
-        minWidth: '220px',
-        maxWidth: '260px',
-      }}
-    >
-      <div className="bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-2.5 flex items-start justify-between">
-          <div className="text-white font-semibold text-sm leading-tight pr-2 flex-1">
-            {place.name}
+      <div
+          ref={popupDomRef}
+          style={{
+            position: 'absolute',
+            left: pos.x,
+            top: pos.y,
+            transform: 'translate(-50%, calc(-100% - 52px))',
+            zIndex: 1000,
+            pointerEvents: 'auto',
+            minWidth: '220px',
+            maxWidth: '260px',
+          }}
+          // Двойная страховка: стопаем все mouse-события на уровне React,
+          // чтобы они не дошли до обработчика карты.
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+          onDoubleClick={(e) => e.stopPropagation()}
+      >
+        <div className="bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-2.5 flex items-start justify-between">
+            <div className="text-white font-semibold text-sm leading-tight pr-2 flex-1">
+              {place.name}
+            </div>
+            <button
+                onClick={(e) => { e.stopPropagation(); onClose(); }}
+                className="text-white/80 hover:text-white text-xl leading-none flex-shrink-0 w-5 h-5 flex items-center justify-center"
+            >
+              ×
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="text-white/80 hover:text-white text-xl leading-none flex-shrink-0 w-5 h-5 flex items-center justify-center"
-          >
-            ×
-          </button>
-        </div>
 
-        {/* Info */}
-        <div className="px-3 py-2 space-y-1">
-          {(place.category || place.type) && (
-            <span className="inline-block bg-blue-50 text-blue-700 text-xs font-medium px-2 py-0.5 rounded-full">
+          {/* Info */}
+          <div className="px-3 py-2 space-y-1">
+            {(place.category || place.type) && (
+                <span className="inline-block bg-blue-50 text-blue-700 text-xs font-medium px-2 py-0.5 rounded-full">
               {place.category || place.type}
             </span>
-          )}
-          {place.distance !== undefined && (
-            <div className="flex items-center gap-1 text-xs text-gray-500">
-              <span>📏</span>
-              <span>{place.distance.toFixed(2)} км от вас</span>
-            </div>
-          )}
-          {isVisited && (
-            <div className="flex items-center gap-1 text-xs text-green-600 font-medium">
-              <span>✅</span> Посещено
-            </div>
-          )}
+            )}
+            {place.distance !== undefined && (
+                <div className="flex items-center gap-1 text-xs text-gray-500">
+                  <span>📏</span>
+                  <span>{place.distance.toFixed(2)} км от вас</span>
+                </div>
+            )}
+            {isVisited && (
+                <div className="flex items-center gap-1 text-xs text-green-600 font-medium">
+                  <span>✅</span> Посещено
+                </div>
+            )}
+          </div>
+
+          {/* Buttons */}
+          <div className="px-3 pb-3 space-y-2">
+            {/* Маршрут */}
+            {userLocation && (
+                <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRouteRequest(place);
+                      onClose();
+                    }}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-3 rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  🗺️ Построить маршрут
+                </button>
+            )}
+
+            {/* Посещено */}
+            {isLoggedIn ? (
+                <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onMarkVisited(place);
+                    }}
+                    className={`w-full text-sm font-medium py-2 px-3 rounded-lg transition-colors flex items-center justify-center gap-2 ${
+                        isVisited
+                            ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                >
+                  {isVisited ? '✅ Посещено' : '☑️ Отметить посещённым'}
+                </button>
+            ) : (
+                <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onShowAuth();
+                      onClose();
+                    }}
+                    className="w-full bg-gray-100 text-gray-400 text-sm font-medium py-2 px-3 rounded-lg hover:bg-gray-200 hover:text-gray-600 transition-colors flex items-center justify-center gap-2"
+                >
+                  🔒 Войдите, чтобы отметить
+                </button>
+            )}
+          </div>
         </div>
 
-        {/* Buttons */}
-        <div className="px-3 pb-3 space-y-2">
-          {/* Маршрут */}
-          {userLocation && (
-            <button
-              onClick={() => {
-                onRouteRequest(place);
-                onClose();
-              }}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-3 rounded-lg transition-colors flex items-center justify-center gap-2"
-            >
-              🗺️ Построить маршрут
-            </button>
-          )}
-
-          {/* Посещено */}
-          {isLoggedIn ? (
-            <button
-              onClick={() => {
-                onMarkVisited(place);
-              }}
-              className={`w-full text-sm font-medium py-2 px-3 rounded-lg transition-colors flex items-center justify-center gap-2 ${
-                isVisited
-                  ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              {isVisited ? '✅ Посещено' : '☑️ Отметить посещённым'}
-            </button>
-          ) : (
-            <button
-              onClick={() => {
-                onShowAuth();
-                onClose();
-              }}
-              className="w-full bg-gray-100 text-gray-400 text-sm font-medium py-2 px-3 rounded-lg hover:bg-gray-200 hover:text-gray-600 transition-colors flex items-center justify-center gap-2"
-            >
-              🔒 Войдите, чтобы отметить
-            </button>
-          )}
-        </div>
+        {/* Стрелка вниз */}
+        <div
+            style={{
+              width: 0,
+              height: 0,
+              borderLeft: '9px solid transparent',
+              borderRight: '9px solid transparent',
+              borderTop: '9px solid white',
+              margin: '0 auto',
+              filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.12))',
+            }}
+        />
       </div>
-
-      {/* Стрелка вниз */}
-      <div
-        style={{
-          width: 0,
-          height: 0,
-          borderLeft: '9px solid transparent',
-          borderRight: '9px solid transparent',
-          borderTop: '9px solid white',
-          margin: '0 auto',
-          filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.12))',
-        }}
-      />
-    </div>
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
 // Inner map component
+// ─────────────────────────────────────────────────────────────────────────────
 function InnerMap({
-  userLocation,
-  places,
-  radiusKm,
-  onMapClick,
-  selectedPlace,
-  onPlaceSelect,
-  onRouteRequest,
-  routeTarget,
-  isLoggedIn,
-  visitedIds,
-  onMarkVisited,
-  onShowAuth,
-}: MapViewProps) {
+                    userLocation,
+                    places,
+                    radiusKm,
+                    onMapClick,
+                    selectedPlace,
+                    onPlaceSelect,
+                    onRouteRequest,
+                    routeTarget,
+                    isLoggedIn,
+                    visitedIds,
+                    onMarkVisited,
+                    onShowAuth,
+                  }: MapViewProps) {
   const map = useMap();
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
@@ -349,7 +380,9 @@ function InnerMap({
     mapRef.current = map;
   }, [map]);
 
-  // Клик по карте — только меняем местоположение пользователя, закрываем попап
+  // Клик по карте — только меняем местоположение пользователя, закрываем попап.
+  // Этот обработчик НЕ сработает если клик был внутри попапа —
+  // благодаря L.DomEvent.disableClickPropagation выше.
   useMapEvents({
     click: (e) => {
       setActivePopupPlace(null);
@@ -366,7 +399,7 @@ function InnerMap({
 
   const handleMarkerClick = (place: PlaceWithDistance) => {
     setActivePopupPlace(prev =>
-      prev?.id === place.id && prev?.name === place.name ? null : place
+        prev?.id === place.id && prev?.name === place.name ? null : place
     );
     onPlaceSelect?.(place);
   };
@@ -412,78 +445,82 @@ function InnerMap({
       markersRef.current.forEach((m) => m.removeFrom(map));
       markersRef.current.clear();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userLocation, places, selectedPlace, visitedIds]);
 
   return (
-    <>
-      <MapController center={userLocation ? [userLocation.lat, userLocation.lng] : null} />
-      <FlyToPlace place={selectedPlace} />
-      <FitRadius
-        center={userLocation ? [userLocation.lat, userLocation.lng] : null}
-        radiusKm={radiusKm}
-        hasPlaces={places.length > 0}
-      />
-
-      {userLocation && (
-        <Circle
-          center={[userLocation.lat, userLocation.lng]}
-          radius={radiusKm * 1000}
-          pathOptions={{
-            color: '#3b82f6',
-            fillColor: '#3b82f6',
-            fillOpacity: 0.07,
-            weight: 2,
-            dashArray: '6, 6',
-          }}
+      <>
+        <MapController center={userLocation ? [userLocation.lat, userLocation.lng] : null} />
+        <FlyToPlace place={selectedPlace} />
+        <FitRadius
+            center={userLocation ? [userLocation.lat, userLocation.lng] : null}
+            radiusKm={radiusKm}
+            hasPlaces={places.length > 0}
         />
-      )}
 
-      {userLocation && routeTarget && (
-        <RoutingControl
-          from={L.latLng(userLocation.lat, userLocation.lng)}
-          to={L.latLng(routeTarget.lat, routeTarget.lng)}
-        />
-      )}
+        {userLocation && (
+            <Circle
+                center={[userLocation.lat, userLocation.lng]}
+                radius={radiusKm * 1000}
+                pathOptions={{
+                  color: '#3b82f6',
+                  fillColor: '#3b82f6',
+                  fillOpacity: 0.07,
+                  weight: 2,
+                  dashArray: '6, 6',
+                }}
+            />
+        )}
 
-      {activePopupPlace && mapRef.current && (
-        <div style={{ position: 'absolute', inset: 0, zIndex: 999, pointerEvents: 'none' }}>
-          <PlacePopupOverlay
-            place={activePopupPlace}
-            mapRef={mapRef as React.RefObject<L.Map>}
-            onClose={() => setActivePopupPlace(null)}
-            onRouteRequest={handleRouteRequest}
-            userLocation={userLocation}
-            isLoggedIn={isLoggedIn}
-            isVisited={activePopupPlace.id !== undefined && visitedIds.has(activePopupPlace.id!)}
-            onMarkVisited={(p) => onMarkVisited?.(p)}
-            onShowAuth={() => onShowAuth?.()}
-          />
-        </div>
-      )}
-    </>
+        {userLocation && routeTarget && (
+            <RoutingControl
+                from={L.latLng(userLocation.lat, userLocation.lng)}
+                to={L.latLng(routeTarget.lat, routeTarget.lng)}
+            />
+        )}
+
+        {activePopupPlace && mapRef.current && (
+            <div style={{ position: 'absolute', inset: 0, zIndex: 999, pointerEvents: 'none' }}>
+              <PlacePopupOverlay
+                  place={activePopupPlace}
+                  mapRef={mapRef as React.RefObject<L.Map>}
+                  onClose={() => setActivePopupPlace(null)}
+                  onRouteRequest={handleRouteRequest}
+                  userLocation={userLocation}
+                  isLoggedIn={isLoggedIn}
+                  isVisited={activePopupPlace.id !== undefined && visitedIds.has(activePopupPlace.id!)}
+                  onMarkVisited={(p) => onMarkVisited?.(p)}
+                  onShowAuth={() => onShowAuth?.()}
+              />
+            </div>
+        )}
+      </>
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// MapView — корневой компонент
+// ─────────────────────────────────────────────────────────────────────────────
 export default function MapView(props: MapViewProps) {
   const defaultCenter: [number, number] = [55.7558, 37.6173];
   const center: [number, number] = props.userLocation
-    ? [props.userLocation.lat, props.userLocation.lng]
-    : defaultCenter;
+      ? [props.userLocation.lat, props.userLocation.lng]
+      : defaultCenter;
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-      <MapContainer
-        center={center}
-        zoom={13}
-        className="w-full h-full"
-        style={{ minHeight: '100%' }}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        <InnerMap {...props} />
-      </MapContainer>
-    </div>
+      <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+        <MapContainer
+            center={center}
+            zoom={13}
+            className="w-full h-full"
+            style={{ minHeight: '100%' }}
+        >
+          <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          <InnerMap {...props} />
+        </MapContainer>
+      </div>
   );
 }

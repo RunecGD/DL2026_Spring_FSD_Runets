@@ -24,7 +24,7 @@ export const fetchNearbyPlaces = async (
   };
 
   if (category && category !== 'all') {
-    params.type = category;
+    params.category = category;
   }
 
   console.log(`📡 GET ${API_BASE_URL}/api/places/nearby`, params);
@@ -41,8 +41,8 @@ export const fetchNearbyPlaces = async (
 // Получить все категории/типы
 export const fetchCategories = async (): Promise<string[]> => {
   try {
-    console.log(`📡 GET ${API_BASE_URL}/places/type`);
-    const response = await axios.get(`${API_BASE_URL}/places/type`, {
+    console.log(`📡 GET ${API_BASE_URL}/api/places/type`);
+    const response = await axios.get(`${API_BASE_URL}/api/places/type`, {
       timeout: 5000,
     });
     console.log('📨 Категории:', response.data);
