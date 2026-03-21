@@ -14,7 +14,6 @@ import (
 )
 
 func init() {
-	// Загружаем .env файл ДО инициализации пакета middleware
 	if err := godotenv.Load(); err != nil {
 		log.Println("⚠️  .env файл не найден, используем системные переменные")
 	}
