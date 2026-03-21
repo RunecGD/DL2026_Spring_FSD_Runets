@@ -147,17 +147,30 @@ CREATE INDEX idx_visited_places_place ON visited_places(place_id);
 Populate the `places` table with sample data:
 
 ```sql
-INSERT INTO places (name, description, latitude, longitude, category, address, rating) VALUES
-('Central Park', 'A large public park in the city center', 40.785091, -73.968285, 'Park', '123 Park Avenue', 4.8),
-('History Museum', 'Museum featuring local history exhibits', 40.779437, -73.963244, 'Museum', '456 Museum Street', 4.5),
-('Old Town Square', 'Historic square with beautiful architecture', 40.758896, -73.985130, 'Square', '789 Old Town Road', 4.7),
-('Cathedral of St. Mary', 'Gothic cathedral built in the 15th century', 40.748817, -73.985428, 'Temple', '321 Cathedral Lane', 4.9),
-('Art Gallery', 'Contemporary art exhibitions', 40.761432, -73.977621, 'Gallery', '555 Art Boulevard', 4.3),
-('Botanical Garden', 'Beautiful garden with rare plant species', 40.783060, -73.958908, 'Park', '888 Garden Way', 4.6),
-('Science Center', 'Interactive science museum for all ages', 40.706086, -74.008869, 'Museum', '100 Science Drive', 4.4),
-('Historic Bridge', '19th century stone bridge over the river', 40.712776, -74.005974, 'Monument', '200 Bridge Street', 4.2),
-('City Theater', 'Performing arts venue with daily shows', 40.759011, -73.984472, 'Theater', '300 Theater Plaza', 4.7),
-('Memorial Park', 'Park dedicated to local heroes', 40.741895, -73.989308, 'Park', '400 Memorial Drive', 4.5);
+INSERT INTO places (name, category, lat, lng) VALUES
+-- Рестораны
+('Grand Café', 'Ресторан', 53.9035, 27.5598),
+('Gastrobar', 'Ресторан', 53.9052, 27.5781),
+
+-- Музеи
+('Музей истории', 'Музей', 53.9042, 27.5603),
+('Музей современного искусства', 'Музей', 53.9145, 27.5932),
+
+-- Парки
+('Парк Победы', 'Парк', 53.9205, 27.5443),
+('Центральный детский парк', 'Парк', 53.9082, 27.5798),
+
+-- Памятники
+('Монумент Победы', 'Памятник', 53.9083, 27.5647),
+('Купаловский сквер', 'Памятник', 53.9028, 27.5621),
+
+-- Спорт
+('Футбольный манеж', 'Спорт', 53.8953, 27.4853),
+('Теннисный центр', 'Спорт', 53.9115, 27.5862),
+
+-- Торговые центры
+('Galleria Minsk', 'Торговый центр', 53.9021, 27.5663),
+('Dana Mall', 'Торговый центр', 53.9252, 27.6332);
 ```
 
 ## 🔌 API Endpoints
