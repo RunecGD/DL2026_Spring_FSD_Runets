@@ -121,17 +121,11 @@ CREATE TABLE users (
 
 -- Places table
 CREATE TABLE places (
-    id SERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    description TEXT,
-    latitude DECIMAL(10, 8) NOT NULL,
-    longitude DECIMAL(11, 8) NOT NULL,
-    category VARCHAR(100),
-    address VARCHAR(500),
-    image_url VARCHAR(500),
-    rating DECIMAL(2, 1) DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    category VARCHAR(100) NOT NULL,
+    lat DOUBLE PRECISION NOT NULL,
+    lng DOUBLE PRECISION NOT NULL
 );
 
 -- Visited places table
@@ -140,7 +134,6 @@ CREATE TABLE visited_places (
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     place_id INTEGER NOT NULL REFERENCES places(id) ON DELETE CASCADE,
     visited_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(user_id, place_id)
 );
 
 -- Indexes for better performance
