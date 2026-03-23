@@ -1,4 +1,4 @@
-# 🧭 GeoGuide
+#  GeoGuide
 
 <div align="center">
 
@@ -16,24 +16,24 @@
 
 ---
 
-## 📖 About
+##  About
 
 GeoGuide is a pet project designed to help users discover nearby attractions and points of interest. Whether you're a tourist exploring a new city or a local looking to uncover hidden gems in your hometown, GeoGuide makes it easy to find interesting places around you.
 
 ### Target Audience
 
-- 🧳 **Tourists & Visitors** — Explore unfamiliar cities and find popular attractions nearby
-- 🏠 **Local Residents** — Discover new places and hidden spots in your own city
+-  **Tourists & Visitors** — Explore unfamiliar cities and find popular attractions nearby
+-  **Local Residents** — Discover new places and hidden spots in your own city
 
-## ✨ Features
+##  Features
 
-- 📍 Geolocation-based attraction discovery
-- 🗺️ Find places sorted by distance from your location
-- ✅ Track visited places
-- 🔐 User authentication with JWT
-- 📱 Cross-platform support
+-  Geolocation-based attraction discovery
+-  Find places sorted by distance from your location
+-  Track visited places
+-  User authentication with JWT
+-  Cross-platform support
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 | Layer | Technology |
 |-------|------------|
@@ -42,13 +42,13 @@ GeoGuide is a pet project designed to help users discover nearby attractions and
 | **Database** | PostgreSQL |
 | **ORM** | GORM |
 
-## 📋 Prerequisites
+##  Prerequisites
 
 - Go 1.26+
 - Node.js v25.7.0+
 - PostgreSQL
 
-## 🚀 Installation
+##  Installation
 
 ### 1. Clone the Repository
 
@@ -102,7 +102,7 @@ npm run dev
 
 The frontend will start on **port 5173**.
 
-## 💾 Database Setup
+##  Database Setup
 
 The application requires 3 tables: `users`, `places`, and `visited_places`.
 
@@ -173,7 +173,7 @@ INSERT INTO places (name, category, lat, lng) VALUES
 ('Dana Mall', 'Торговый центр', 53.9252, 27.6332);
 ```
 
-## 🔌 API Endpoints
+##  API Endpoints
 
 The API runs on `http://localhost:8080`
 
@@ -200,7 +200,7 @@ The API runs on `http://localhost:8080`
 | POST | `/api/visited/:place_id` | Mark place as visited |
 | DELETE | `/api/visited/:place_id` | Remove from visited |
 
-## 🐧 Linux Configuration
+##  Linux Configuration
 
 For proper geolocation functionality in browsers on Linux, ensure the following:
 
@@ -217,7 +217,7 @@ For proper geolocation functionality in browsers on Linux, ensure the following:
 
 3. **Browser Permissions**: Allow location access when prompted by the browser.
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 geoguide/
@@ -237,14 +237,14 @@ geoguide/
 └── README.md
 ```
 
-## 🌐 Ports
+##  Ports
 
 | Service | Port |
 |---------|------|
 | Backend API | 8080 |
 | Frontend | 5173 |
 
-## 🤝 Contributing
+##  Contributing
 
 Contributions are welcome! Feel free to:
 
@@ -254,7 +254,7 @@ Contributions are welcome! Feel free to:
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📄 License
+##  License
 
 This project is open source and available under the [MIT License](LICENSE).
 
